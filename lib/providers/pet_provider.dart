@@ -14,8 +14,14 @@ class PetNotifier extends StateNotifier<Pet?> {
   // ── Restore ───────────────────────────────────────────────────────────────
 
   void _tryRestorePet() {
-    final saved = StorageService.loadPet();
+    var saved = StorageService.loadPet();
     if (saved == null) return;
+
+    // Migrate any legacy dog/rabbit save → cat (only cat is active now)
+    if (saved.type != PetType.cat) {
+      saved = Pet(type: PetType.cat);
+      StorageService.savePet(saved);
+    }
 
     // Apply offline time decay (capped to avoid punishing long absences)
     if (saved.lastSaved != null) {
