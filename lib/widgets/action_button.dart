@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import '../core/theme.dart';
 
 class ActionButton extends StatefulWidget {
   final String icon;
   final String label;
-  final Color color;
+  final List<Color> gradient;
   final VoidCallback? onTap;
   final bool enabled;
 
@@ -13,7 +12,7 @@ class ActionButton extends StatefulWidget {
     super.key,
     required this.icon,
     required this.label,
-    required this.color,
+    required this.gradient,
     required this.onTap,
     this.enabled = true,
   });
@@ -31,7 +30,7 @@ class _ActionButtonState extends State<ActionButton>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 120));
+        vsync: this, duration: const Duration(milliseconds: 110));
     _scale = Tween<double>(begin: 1.0, end: 0.88)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
   }
@@ -51,45 +50,46 @@ class _ActionButtonState extends State<ActionButton>
 
   @override
   Widget build(BuildContext context) {
-    final effective = widget.enabled && widget.onTap != null;
+    final active = widget.enabled && widget.onTap != null;
 
     return GestureDetector(
       onTap: _onTap,
       child: AnimatedBuilder(
         animation: _scale,
-        builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
+        builder: (_, child) =>
+            Transform.scale(scale: _scale.value, child: child),
         child: Opacity(
-          opacity: effective ? 1.0 : 0.45,
+          opacity: active ? 1.0 : 0.45,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+            padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              color: Colors.white,
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: widget.gradient,
+              ),
               borderRadius: BorderRadius.circular(20),
-              boxShadow: AppTheme.cardShadow,
+              boxShadow: [
+                BoxShadow(
+                  color: widget.gradient.first.withValues(alpha: 0.38),
+                  blurRadius: 12,
+                  offset: const Offset(0, 5),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: widget.color.withValues(alpha: 0.18),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Center(
-                    child: Text(widget.icon,
-                        style: const TextStyle(fontSize: 26)),
-                  ),
-                ),
-                const SizedBox(height: 8),
+                Text(widget.icon, style: const TextStyle(fontSize: 28)),
+                const SizedBox(height: 6),
                 Text(
                   widget.label,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppTheme.textMid,
-                        fontSize: 12,
-                      ),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w700,
+                    fontFamily: 'Nunito',
+                  ),
                 ),
               ],
             ),

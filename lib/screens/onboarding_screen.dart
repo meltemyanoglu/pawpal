@@ -132,7 +132,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 40),
                         child: Text(
-                          'Seni bekleyen minik bir dost var.\nOnu besle, oyna ve mutlu et!',
+                          'A tiny friend is waiting for you.\nFeed, play & keep them happy!',
                           textAlign: TextAlign.center,
                           style: Theme.of(context)
                               .textTheme
@@ -153,7 +153,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
                       // Alt not
                       Text(
-                        'Ücretsiz · Reklamsız · Sevimli',
+                        'Free · Ad-free · Adorable',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
 
@@ -311,7 +311,7 @@ class _StartButtonState extends State<_StartButton>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  "Hadi Başlayalım",
+                  "Let's Go",
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                         fontSize: 18,

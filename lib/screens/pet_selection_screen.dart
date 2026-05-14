@@ -146,7 +146,7 @@ class _PetSelectionScreenState extends ConsumerState<PetSelectionScreen>
     return Column(
       children: [
         Text(
-          'Arkadaşınla tanış',
+          'Meet your friend',
           style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                 color: AppTheme.textLight,
                 fontSize: 14,
@@ -154,7 +154,7 @@ class _PetSelectionScreenState extends ConsumerState<PetSelectionScreen>
         ),
         const SizedBox(height: 4),
         Text(
-          'Seni Bekliyor ✨',
+          'Waiting for you ✨',
           style: Theme.of(context)
               .textTheme
               .headlineMedium
@@ -208,10 +208,10 @@ class _PetSelectionScreenState extends ConsumerState<PetSelectionScreen>
 
   Widget _buildTraits(BuildContext context) {
     const traits = [
-      ('😴', 'Uyku Sever'),
-      ('🎯', 'Meraklı'),
-      ('🌙', 'Gizemli'),
-      ('🐾', 'Zarif'),
+      ('😴', 'Nap Lover'),
+      ('🎯', 'Curious'),
+      ('🌙', 'Mysterious'),
+      ('🐾', 'Elegant'),
     ];
 
     return Row(
@@ -394,7 +394,7 @@ class _AdoptButtonState extends State<_AdoptButton>
                 const Text('🐾', style: TextStyle(fontSize: 20)),
                 const SizedBox(width: 10),
                 Text(
-                  '${widget.petName} ile Başla!',
+                  'Start with ${widget.petName}!',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: Colors.white,
                         fontSize: 18,
