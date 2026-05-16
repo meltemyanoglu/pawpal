@@ -35,35 +35,24 @@ class _MainBody extends ConsumerStatefulWidget {
 class _MainBodyState extends ConsumerState<_MainBody>
     with TickerProviderStateMixin {
   final List<String> _particles = [];
+  int _particleGen = 0;
   Timer? _particleClear;
 
-  late final AnimationController _bgCtrl;
-  late final Animation<Color?> _bgColor;
-
-  @override
-  void initState() {
-    super.initState();
-    _bgCtrl = AnimationController(
-        vsync: this, duration: const Duration(seconds: 10));
-    _bgColor = ColorTween(
-      begin: const Color(0xFFFFF8F2),
-      end: const Color(0xFFF8F2FF),
-    ).animate(CurvedAnimation(parent: _bgCtrl, curve: Curves.easeInOut));
-    _bgCtrl.repeat(reverse: true);
+  void _emit(String emoji) {
+    setState(() {
+      _particles.clear();
+      _particles.addAll([emoji, emoji, emoji]);
+      _particleGen++;
+    });
+    _particleClear?.cancel();
+    _particleClear = Timer(const Duration(milliseconds: 950),
+        () => mounted ? setState(() => _particles.clear()) : null);
   }
 
   @override
   void dispose() {
     _particleClear?.cancel();
-    _bgCtrl.dispose();
     super.dispose();
-  }
-
-  void _emit(String emoji) {
-    setState(() => _particles.add(emoji));
-    _particleClear?.cancel();
-    _particleClear = Timer(const Duration(milliseconds: 950),
-        () => mounted ? setState(() => _particles.clear()) : null);
   }
 
   void _handleAction(String action) {
@@ -84,29 +73,47 @@ class _MainBodyState extends ConsumerState<_MainBody>
     }
   }
 
+  static Color _moodBg(PetMood mood) => switch (mood) {
+        PetMood.ecstatic => const Color(0xFFFFF0F5),
+        PetMood.happy => const Color(0xFFFFF8F0),
+        PetMood.neutral => const Color(0xFFF8F8FF),
+        PetMood.sad => const Color(0xFFEEF4FF),
+        PetMood.exhausted => const Color(0xFFFFEEEE),
+        PetMood.sleeping => const Color(0xFFF2F0FF),
+      };
+
   @override
   Widget build(BuildContext context) {
     final pet = ref.watch(petProvider)!;
 
-    return AnimatedBuilder(
-      animation: _bgColor,
-      builder: (_, child) =>
-          Scaffold(backgroundColor: _bgColor.value, body: child),
-      child: SafeArea(
-        child: Column(
-          children: [
-            _TopBar(pet: pet),
-            const SizedBox(height: 8),
-            _PetSection(pet: pet, particles: List.from(_particles)),
-            const SizedBox(height: 16),
-            _StatsGrid(pet: pet),
-            const Spacer(),
-            _ActionRow(
-              pet: pet,
-              onAction: _handleAction,
-            ),
-            const SizedBox(height: 28),
-          ],
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 800),
+      curve: Curves.easeInOut,
+      color: _moodBg(pet.mood),
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        body: SafeArea(
+          child: Column(
+            children: [
+              _TopBar(pet: pet),
+              const SizedBox(height: 8),
+              _PetSection(
+                pet: pet,
+                particles: List.from(_particles),
+                particleGen: _particleGen,
+              ),
+              const SizedBox(height: 10),
+              _ThoughtBubble(pet: pet),
+              const SizedBox(height: 14),
+              _StatsGrid(pet: pet),
+              const Spacer(),
+              _ActionRow(
+                pet: pet,
+                onAction: _handleAction,
+              ),
+              const SizedBox(height: 28),
+            ],
+          ),
         ),
       ),
     );
@@ -178,48 +185,103 @@ class _HealthBadge extends StatelessWidget {
   }
 }
 
-// ── Pet + mood section ────────────────────────────────────────────────────────
+// ── Pet section ───────────────────────────────────────────────────────────────
 
 class _PetSection extends StatelessWidget {
   final Pet pet;
   final List<String> particles;
-  const _PetSection({required this.pet, required this.particles});
+  final int particleGen;
+  const _PetSection(
+      {required this.pet, required this.particles, required this.particleGen});
 
   @override
   Widget build(BuildContext context) {
-    return Column(children: [
-      PetDisplay(pet: pet, particles: particles),
-      const SizedBox(height: 14),
-      _MoodChip(pet: pet),
-    ]);
+    return PetDisplay(
+      pet: pet,
+      particles: particles,
+      particleGeneration: particleGen,
+    );
   }
 }
 
-class _MoodChip extends StatelessWidget {
+// ── Thought bubble ────────────────────────────────────────────────────────────
+
+class _ThoughtBubble extends StatefulWidget {
   final Pet pet;
-  const _MoodChip({required this.pet});
+  const _ThoughtBubble({required this.pet});
+
+  @override
+  State<_ThoughtBubble> createState() => _ThoughtBubbleState();
+}
+
+class _ThoughtBubbleState extends State<_ThoughtBubble> {
+  int _index = 0;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(const Duration(seconds: 4), (_) {
+      if (mounted) {
+        setState(() {
+          _index = (_index + 1) % widget.pet.thoughtMessages.length;
+        });
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(_ThoughtBubble old) {
+    super.didUpdateWidget(old);
+    if (old.pet.mood != widget.pet.mood) {
+      setState(() => _index = 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final msg = widget.pet.thoughtMessages[_index];
     return AnimatedSwitcher(
-      duration: const Duration(milliseconds: 350),
+      duration: const Duration(milliseconds: 400),
+      transitionBuilder: (child, anim) => FadeTransition(
+        opacity: anim,
+        child: SlideTransition(
+          position:
+              Tween<Offset>(begin: const Offset(0, 0.15), end: Offset.zero)
+                  .animate(anim),
+          child: child,
+        ),
+      ),
       child: Container(
-        key: ValueKey(pet.moodText),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        key: ValueKey('$_index${widget.pet.mood}'),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
           boxShadow: AppTheme.cardShadow,
         ),
-        child: Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(pet.moodEmoji, style: const TextStyle(fontSize: 18)),
-          const SizedBox(width: 8),
-          Text(pet.moodText,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('💭', style: TextStyle(fontSize: 15)),
+            const SizedBox(width: 8),
+            Text(
+              '"$msg"',
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppTheme.textMid,
+                    fontStyle: FontStyle.italic,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
-                  )),
-        ]),
+                  ),
+            ),
+          ],
+        ),
       ),
     );
   }

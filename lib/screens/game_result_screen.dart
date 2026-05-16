@@ -1,20 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
 import '../core/routes.dart';
+import '../providers/pet_provider.dart';
 
-class GameResultScreen extends StatefulWidget {
+class GameResultScreen extends ConsumerStatefulWidget {
   final int score;
   const GameResultScreen({super.key, required this.score});
 
   @override
-  State<GameResultScreen> createState() => _GameResultScreenState();
+  ConsumerState<GameResultScreen> createState() => _GameResultScreenState();
 }
 
-class _GameResultScreenState extends State<GameResultScreen>
+class _GameResultScreenState extends ConsumerState<GameResultScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
   late final Animation<double> _fade;
+
+  final List<bool> _starsVisible = [false, false, false];
 
   int get _stars {
     if (widget.score >= 20) return 3;
@@ -59,6 +63,12 @@ class _GameResultScreenState extends State<GameResultScreen>
     _fade = Tween<double>(begin: 0.0, end: 1.0)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeIn));
     _ctrl.forward();
+
+    for (var i = 0; i < _stars; i++) {
+      Future.delayed(Duration(milliseconds: 650 + i * 220), () {
+        if (mounted) setState(() => _starsVisible[i] = true);
+      });
+    }
   }
 
   @override
@@ -66,6 +76,8 @@ class _GameResultScreenState extends State<GameResultScreen>
     _ctrl.dispose();
     super.dispose();
   }
+
+  String get _petName => ref.read(petProvider)?.name ?? 'Mochi';
 
   @override
   Widget build(BuildContext context) {
@@ -90,7 +102,6 @@ class _GameResultScreenState extends State<GameResultScreen>
               child: Column(
                 children: [
                   const Spacer(),
-                  // Score circle
                   ScaleTransition(
                     scale: _scale,
                     child: _ScoreCircle(score: widget.score),
@@ -106,13 +117,10 @@ class _GameResultScreenState extends State<GameResultScreen>
                             fontSize: 16,
                           )),
                   const SizedBox(height: 28),
-                  // Stars
-                  _StarRow(stars: _stars),
+                  _StarRow(stars: _stars, visible: _starsVisible),
                   const SizedBox(height: 16),
-                  // Happiness gained
                   _HappinessChip(score: widget.score),
                   const Spacer(),
-                  // Buttons
                   _buildButtons(context),
                   const SizedBox(height: 40),
                 ],
@@ -160,7 +168,7 @@ class _GameResultScreenState extends State<GameResultScreen>
               boxShadow: AppTheme.cardShadow,
             ),
             child: Center(
-              child: Text('Back to ${_getPetName(context)} 🐾',
+              child: Text('Back to $_petName 🐾',
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                         color: AppTheme.textDark,
                         fontSize: 17,
@@ -171,8 +179,6 @@ class _GameResultScreenState extends State<GameResultScreen>
       ],
     );
   }
-
-  String _getPetName(BuildContext context) => 'my pet';
 }
 
 // ── Score circle ──────────────────────────────────────────────────────────────
@@ -224,11 +230,12 @@ class _ScoreCircle extends StatelessWidget {
   }
 }
 
-// ── Star row ──────────────────────────────────────────────────────────────────
+// ── Star row (staggered) ──────────────────────────────────────────────────────
 
 class _StarRow extends StatelessWidget {
   final int stars;
-  const _StarRow({required this.stars});
+  final List<bool> visible;
+  const _StarRow({required this.stars, required this.visible});
 
   @override
   Widget build(BuildContext context) {
@@ -236,16 +243,22 @@ class _StarRow extends StatelessWidget {
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(3, (i) {
         final filled = i < stars;
+        final show = visible[i];
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 6),
           child: AnimatedScale(
-            scale: filled ? 1.2 : 1.0,
-            duration: Duration(milliseconds: 300 + i * 100),
-            child: Text(
-              filled ? '⭐' : '☆',
-              style: TextStyle(
-                fontSize: filled ? 40 : 34,
-                color: filled ? Colors.amber : Colors.grey.shade300,
+            scale: show ? 1.3 : (filled ? 0.0 : 1.0),
+            duration: Duration(milliseconds: 300 + i * 80),
+            curve: Curves.easeOutBack,
+            child: AnimatedOpacity(
+              opacity: filled ? (show ? 1.0 : 0.0) : 1.0,
+              duration: const Duration(milliseconds: 200),
+              child: Text(
+                filled ? '⭐' : '☆',
+                style: TextStyle(
+                  fontSize: filled ? 40 : 34,
+                  color: filled ? Colors.amber : Colors.grey.shade300,
+                ),
               ),
             ),
           ),
