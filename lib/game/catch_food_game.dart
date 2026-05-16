@@ -6,6 +6,7 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'components/basket_component.dart';
 import 'components/food_item_component.dart';
+import 'components/bomb_component.dart';
 
 class CatchFoodGame extends FlameGame
     with HasCollisionDetection, DragCallbacks {
@@ -34,7 +35,6 @@ class CatchFoodGame extends FlameGame
   Future<void> onLoad() async {
     await super.onLoad();
 
-    // Background decoration circles
     add(CircleComponent(
       radius: 120,
       position: Vector2(-40, -40),
@@ -46,19 +46,16 @@ class CatchFoodGame extends FlameGame
       paint: Paint()..color = const Color(0xFFD6EEFF).withValues(alpha: 0.4),
     ));
 
-    // Ground line
     add(RectangleComponent(
       position: Vector2(0, size.y - 80),
       size: Vector2(size.x, 2),
       paint: Paint()..color = const Color(0xFFEEEEEE),
     ));
 
-    // Basket
     _basket = BasketComponent();
     _basket.position = Vector2(size.x / 2 - _basket.size.x / 2, size.y - 100);
     add(_basket);
 
-    // HUD – score
     _scoreLabel = TextComponent(
       text: '🍎 0',
       textRenderer: TextPaint(
@@ -73,9 +70,11 @@ class CatchFoodGame extends FlameGame
     );
     add(_scoreLabel);
 
-    // HUD – timer
+    // anchor: topRight avoids the size=0 bug before layout
     _timerLabel = TextComponent(
       text: '⏱ 30',
+      anchor: Anchor.topRight,
+      position: Vector2(size.x - 18, 52),
       textRenderer: TextPaint(
         style: const TextStyle(
           fontSize: 22,
@@ -85,22 +84,20 @@ class CatchFoodGame extends FlameGame
         ),
       ),
     );
-    _timerLabel.position = Vector2(
-        size.x - _timerLabel.size.x - 18, 52);
     add(_timerLabel);
 
-    // Instruction text
     final hint = TextComponent(
-      text: 'Drag to catch the food!',
+      text: 'Drag to catch food  •  Avoid 💣',
+      anchor: Anchor.bottomCenter,
+      position: Vector2(size.x / 2, size.y - 28),
       textRenderer: TextPaint(
         style: const TextStyle(
-          fontSize: 14,
+          fontSize: 13,
           color: Color(0xFFAAAAAA),
           fontFamily: 'Nunito',
         ),
       ),
     );
-    hint.position = Vector2(size.x / 2 - 90, size.y - 48);
     add(hint);
 
     _startTimers();
@@ -110,7 +107,7 @@ class CatchFoodGame extends FlameGame
     _gameTimer =
         async.Timer.periodic(const Duration(seconds: 1), (_) => _tick());
     _spawnTimer = async.Timer.periodic(
-        const Duration(milliseconds: 1100), (_) => _spawnFood());
+        const Duration(milliseconds: 1100), (_) => _spawnItem());
   }
 
   void _tick() {
@@ -118,12 +115,11 @@ class CatchFoodGame extends FlameGame
     _timeLeft--;
     _timerLabel.text = '⏱ $_timeLeft';
 
-    // Increase difficulty over time
     if (_timeLeft % 10 == 0 && _timeLeft > 0) {
       _spawnTimer?.cancel();
       final interval = (1100 - (30 - _timeLeft) * 20).clamp(600, 1100);
       _spawnTimer = async.Timer.periodic(
-          Duration(milliseconds: interval), (_) => _spawnFood());
+          Duration(milliseconds: interval), (_) => _spawnItem());
     }
 
     if (_timeLeft <= 0) {
@@ -131,17 +127,28 @@ class CatchFoodGame extends FlameGame
     }
   }
 
-  void _spawnFood() {
+  void _spawnItem() {
     if (_ended) return;
-    final food = FoodItemComponent(
-      emoji: _foods[_rng.nextInt(_foods.length)],
-      speed: 200 + _rng.nextDouble() * 80,
-    );
-    food.position = Vector2(
-      _rng.nextDouble() * (size.x - food.size.x),
-      -food.size.y,
-    );
-    add(food);
+
+    // 22% chance to spawn a bomb
+    if (_rng.nextDouble() < 0.22) {
+      final bomb = BombComponent(speed: 190 + _rng.nextDouble() * 60);
+      bomb.position = Vector2(
+        _rng.nextDouble() * (size.x - bomb.size.x),
+        -bomb.size.y,
+      );
+      add(bomb);
+    } else {
+      final food = FoodItemComponent(
+        emoji: _foods[_rng.nextInt(_foods.length)],
+        speed: 200 + _rng.nextDouble() * 80,
+      );
+      food.position = Vector2(
+        _rng.nextDouble() * (size.x - food.size.x),
+        -food.size.y,
+      );
+      add(food);
+    }
   }
 
   void onFoodCaught() {
@@ -150,12 +157,38 @@ class CatchFoodGame extends FlameGame
     _scoreLabel.text = '🍎 $_score';
   }
 
+  void onBombCaught() {
+    if (_ended) return;
+    _score = (_score - 2).clamp(0, 9999);
+    _scoreLabel.text = '🍎 $_score';
+    _showPenalty();
+  }
+
+  void _showPenalty() {
+    final penalty = TextComponent(
+      text: '💥 -2',
+      anchor: Anchor.center,
+      position: Vector2(size.x / 2, size.y / 2 - 20),
+      textRenderer: TextPaint(
+        style: const TextStyle(
+          fontSize: 30,
+          fontWeight: FontWeight.w800,
+          color: Color(0xFFFF4C6A),
+          fontFamily: 'Nunito',
+        ),
+      ),
+    );
+    add(penalty);
+    async.Future.delayed(const Duration(milliseconds: 700),
+        () => penalty.removeFromParent());
+  }
+
   void _end() {
     if (_ended) return;
     _ended = true;
     _gameTimer?.cancel();
     _spawnTimer?.cancel();
-    Future.delayed(const Duration(milliseconds: 400), () {
+    async.Future.delayed(const Duration(milliseconds: 400), () {
       onGameEnd(_score);
     });
   }
