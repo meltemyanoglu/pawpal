@@ -154,4 +154,45 @@ class Pet {
     PetType.dog: 'Always ready to play!\nYour most loyal companion.',
     PetType.rabbit: 'Hops into adventure\nwith wide, curious eyes.',
   };
+
+  static const _thoughts = {
+    PetMood.ecstatic: [
+      'I am SO happy right now!',
+      'Best day ever!!!',
+      'Life is purrfect! ✨',
+      'I love you so much!',
+    ],
+    PetMood.happy: [
+      'Feeling great today!',
+      'This is nice 😊',
+      'You take such good care of me!',
+      'Can we play soon?',
+    ],
+    PetMood.neutral: [
+      'Could be better...',
+      'Hmm, I\'m okay I guess.',
+      'Maybe a snack would help?',
+      'What should we do?',
+    ],
+    PetMood.sad: [
+      'I need some attention...',
+      'Please play with me 😢',
+      'A little love goes a long way.',
+      'I\'m not feeling so good.',
+    ],
+    PetMood.exhausted: [
+      'Please help me! 😵',
+      'I\'m so hungry...',
+      'I really need some rest.',
+      'Feed me, please!',
+    ],
+    PetMood.sleeping: [
+      'Zzz... zzz...',
+      'Dreaming of fish... 🐟',
+      'Do not disturb! 😴',
+      'Purr... purr...',
+    ],
+  };
+
+  List<String> get thoughtMessages => _thoughts[mood]!;
 }
