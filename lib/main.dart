@@ -32,7 +32,7 @@ class PawPalApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.theme,
       initialRoute: Routes.onboarding,
-      routes: Routes.all,
+      onGenerateRoute: Routes.generateRoute,
     );
   }
 }

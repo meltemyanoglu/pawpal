@@ -61,7 +61,7 @@ class _ActionButtonState extends State<ActionButton>
         child: Opacity(
           opacity: active ? 1.0 : 0.45,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -80,8 +80,8 @@ class _ActionButtonState extends State<ActionButton>
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(widget.icon, style: const TextStyle(fontSize: 28)),
-                const SizedBox(height: 6),
+                Text(widget.icon, style: const TextStyle(fontSize: 24)),
+                const SizedBox(height: 4),
                 Text(
                   widget.label,
                   style: const TextStyle(

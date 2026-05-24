@@ -32,6 +32,9 @@ class _MiniGameScreenState extends ConsumerState<MiniGameScreen> {
     final happiness = (score * Constants.gameHappinessPerCatch).clamp(0, 40);
     ref.read(petProvider.notifier).addHappiness(happiness.toDouble());
 
+    // Record game result for XP, achievements, missions
+    ref.read(petProvider.notifier).recordGameResult(score);
+
     Navigator.pushReplacementNamed(
       context,
       Routes.gameResult,

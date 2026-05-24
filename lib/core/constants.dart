@@ -27,4 +27,44 @@ class Constants {
 
   // Mini-game happiness per caught item
   static const double gameHappinessPerCatch = 0.8;
+
+  // XP rewards
+  static const int xpPerFeed = 8;
+  static const int xpPerWash = 8;
+  static const int xpPerPlay = 12;
+  static const int xpPerMission = 30;
+
+  // Accessory prices
+  static const Map<String, int> accessoryPrices = {
+    'tophat': 50,
+    'bowtie': 35,
+    'sunglasses': 40,
+    'crown': 100,
+    'scarf': 45,
+    'flower': 25,
+    'headband': 30,
+    'wizard_hat': 80,
+  };
+
+  static const Map<String, String> accessoryNames = {
+    'tophat': 'Top Hat 🎩',
+    'bowtie': 'Bow Tie 🎀',
+    'sunglasses': 'Sunglasses 🕶️',
+    'crown': 'Crown 👑',
+    'scarf': 'Scarf 🧣',
+    'flower': 'Flower 🌸',
+    'headband': 'Headband 💫',
+    'wizard_hat': 'Wizard Hat 🧙',
+  };
+
+  static const Map<String, String> accessoryEmojis = {
+    'tophat': '🎩',
+    'bowtie': '🎀',
+    'sunglasses': '🕶️',
+    'crown': '👑',
+    'scarf': '🧣',
+    'flower': '🌸',
+    'headband': '💫',
+    'wizard_hat': '🧙',
+  };
 }

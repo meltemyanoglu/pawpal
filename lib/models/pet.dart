@@ -11,6 +11,33 @@ class Pet {
   bool isSleeping;
   DateTime? lastSaved;
 
+  // ── XP & Level system ────────────────────────────────────────────────────
+  int xp;
+  int level;
+  int coins;
+
+  // ── Streak system ────────────────────────────────────────────────────────
+  int streak;
+  DateTime? lastLoginDate;
+
+  // ── Stats tracking (for achievements & missions) ─────────────────────────
+  int totalFeeds;
+  int totalWashes;
+  int totalPlays;
+  int totalGamesPlayed;
+  int bestGameScore;
+
+  // ── Achievements ─────────────────────────────────────────────────────────
+  List<String> unlockedAchievements;
+
+  // ── Accessories ──────────────────────────────────────────────────────────
+  List<String> ownedAccessories;
+  String? equippedAccessory;
+
+  // ── Daily missions ───────────────────────────────────────────────────────
+  String? lastMissionDate;
+  List<int> missionProgress; // progress for each of 3 daily missions
+
   Pet({
     required this.type,
     this.hunger = 80,
@@ -19,7 +46,24 @@ class Pet {
     this.energy = 80,
     this.isSleeping = false,
     this.lastSaved,
-  });
+    this.xp = 0,
+    this.level = 1,
+    this.coins = 0,
+    this.streak = 0,
+    this.lastLoginDate,
+    this.totalFeeds = 0,
+    this.totalWashes = 0,
+    this.totalPlays = 0,
+    this.totalGamesPlayed = 0,
+    this.bestGameScore = 0,
+    List<String>? unlockedAchievements,
+    List<String>? ownedAccessories,
+    this.equippedAccessory,
+    this.lastMissionDate,
+    List<int>? missionProgress,
+  })  : unlockedAchievements = unlockedAchievements ?? [],
+        ownedAccessories = ownedAccessories ?? [],
+        missionProgress = missionProgress ?? [0, 0, 0];
 
   // ── Identity ──────────────────────────────────────────────────────────────
 
@@ -27,6 +71,19 @@ class Pet {
   String get emoji => _emojis[type]!;
   String get personality => _personalities[type]!;
   String get description => _descriptions[type]!;
+
+  // ── XP & Level helpers ────────────────────────────────────────────────────
+
+  int get xpForNextLevel => level * 100; // 100, 200, 300...
+  double get xpProgress => xp / xpForNextLevel;
+  String get levelTitle {
+    if (level >= 20) return 'Legendary';
+    if (level >= 15) return 'Master';
+    if (level >= 10) return 'Expert';
+    if (level >= 7) return 'Skilled';
+    if (level >= 4) return 'Growing';
+    return 'Newbie';
+  }
 
   // ── Derived state ─────────────────────────────────────────────────────────
 
@@ -94,6 +151,21 @@ class Pet {
     double? energy,
     bool? isSleeping,
     DateTime? lastSaved,
+    int? xp,
+    int? level,
+    int? coins,
+    int? streak,
+    DateTime? lastLoginDate,
+    int? totalFeeds,
+    int? totalWashes,
+    int? totalPlays,
+    int? totalGamesPlayed,
+    int? bestGameScore,
+    List<String>? unlockedAchievements,
+    List<String>? ownedAccessories,
+    String? equippedAccessory,
+    String? lastMissionDate,
+    List<int>? missionProgress,
   }) =>
       Pet(
         type: type ?? this.type,
@@ -103,6 +175,21 @@ class Pet {
         energy: energy ?? this.energy,
         isSleeping: isSleeping ?? this.isSleeping,
         lastSaved: lastSaved ?? this.lastSaved,
+        xp: xp ?? this.xp,
+        level: level ?? this.level,
+        coins: coins ?? this.coins,
+        streak: streak ?? this.streak,
+        lastLoginDate: lastLoginDate ?? this.lastLoginDate,
+        totalFeeds: totalFeeds ?? this.totalFeeds,
+        totalWashes: totalWashes ?? this.totalWashes,
+        totalPlays: totalPlays ?? this.totalPlays,
+        totalGamesPlayed: totalGamesPlayed ?? this.totalGamesPlayed,
+        bestGameScore: bestGameScore ?? this.bestGameScore,
+        unlockedAchievements: unlockedAchievements ?? List.from(this.unlockedAchievements),
+        ownedAccessories: ownedAccessories ?? List.from(this.ownedAccessories),
+        equippedAccessory: equippedAccessory ?? this.equippedAccessory,
+        lastMissionDate: lastMissionDate ?? this.lastMissionDate,
+        missionProgress: missionProgress ?? List.from(this.missionProgress),
       );
 
   // ── Serialisation ─────────────────────────────────────────────────────────
@@ -115,6 +202,21 @@ class Pet {
         'energy': energy,
         'isSleeping': isSleeping,
         'lastSaved': DateTime.now().toIso8601String(),
+        'xp': xp,
+        'level': level,
+        'coins': coins,
+        'streak': streak,
+        'lastLoginDate': lastLoginDate?.toIso8601String(),
+        'totalFeeds': totalFeeds,
+        'totalWashes': totalWashes,
+        'totalPlays': totalPlays,
+        'totalGamesPlayed': totalGamesPlayed,
+        'bestGameScore': bestGameScore,
+        'unlockedAchievements': unlockedAchievements,
+        'ownedAccessories': ownedAccessories,
+        'equippedAccessory': equippedAccessory,
+        'lastMissionDate': lastMissionDate,
+        'missionProgress': missionProgress,
       };
 
   factory Pet.fromJson(Map<String, dynamic> json) => Pet(
@@ -127,6 +229,28 @@ class Pet {
         lastSaved: json['lastSaved'] != null
             ? DateTime.tryParse(json['lastSaved'] as String)
             : null,
+        xp: json['xp'] as int? ?? 0,
+        level: json['level'] as int? ?? 1,
+        coins: json['coins'] as int? ?? 0,
+        streak: json['streak'] as int? ?? 0,
+        lastLoginDate: json['lastLoginDate'] != null
+            ? DateTime.tryParse(json['lastLoginDate'] as String)
+            : null,
+        totalFeeds: json['totalFeeds'] as int? ?? 0,
+        totalWashes: json['totalWashes'] as int? ?? 0,
+        totalPlays: json['totalPlays'] as int? ?? 0,
+        totalGamesPlayed: json['totalGamesPlayed'] as int? ?? 0,
+        bestGameScore: json['bestGameScore'] as int? ?? 0,
+        unlockedAchievements: (json['unlockedAchievements'] as List<dynamic>?)
+                ?.cast<String>() ??
+            [],
+        ownedAccessories:
+            (json['ownedAccessories'] as List<dynamic>?)?.cast<String>() ?? [],
+        equippedAccessory: json['equippedAccessory'] as String?,
+        lastMissionDate: json['lastMissionDate'] as String?,
+        missionProgress:
+            (json['missionProgress'] as List<dynamic>?)?.cast<int>() ??
+                [0, 0, 0],
       );
 
   // ── Static data ───────────────────────────────────────────────────────────

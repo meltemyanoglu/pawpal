@@ -111,27 +111,32 @@ class _PetDisplayState extends State<PetDisplay> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final colors = _bgGradients[widget.pet.type]!;
     final hasLottie = _lottieReady[widget.pet.type] ?? false;
+    final accessory = widget.pet.equippedAccessory;
+    final hasAccessory = accessory != null && accessory.isNotEmpty;
+
+    // Map accessory IDs to emojis
+    const accessoryEmojis = {
+      'tophat': '🎩',
+      'bowtie': '🎀',
+      'sunglasses': '🕶️',
+      'crown': '👑',
+      'scarf': '🧣',
+      'flower': '🌸',
+      'headband': '💫',
+      'wizard_hat': '🧙',
+    };
 
     return SizedBox(
-      width: 220,
-      height: 220,
+      width: 180,
+      height: 180,
       child: Stack(
         alignment: Alignment.center,
         children: [
+          // Pulsating glow ring
+          _PulseGlow(color: colors[0]),
           Container(
-            width: 220,
-            height: 220,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: RadialGradient(colors: [
-                colors[0].withValues(alpha: 0.55),
-                colors[1].withValues(alpha: 0.05),
-              ]),
-            ),
-          ),
-          Container(
-            width: 180,
-            height: 180,
+            width: 148,
+            height: 148,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: LinearGradient(
@@ -152,9 +157,18 @@ class _PetDisplayState extends State<PetDisplay> with TickerProviderStateMixin {
               ),
             ),
           ),
+          // Equipped accessory
+          if (hasAccessory)
+            Positioned(
+              top: 2,
+              left: 55,
+              child: _BounceAccessory(
+                emoji: accessoryEmojis[accessory] ?? '🎁',
+              ),
+            ),
           Positioned(
-            top: 14,
-            right: 14,
+            top: 8,
+            right: 8,
             child: _MoodBubble(mood: widget.pet.moodEmoji),
           ),
           ...widget.particles.asMap().entries.map(
@@ -176,8 +190,8 @@ class _PetDisplayState extends State<PetDisplay> with TickerProviderStateMixin {
           _lottiePaths[widget.pet.type]!,
           controller: _lottieCtrl,
           onLoaded: _onLottieComposition,
-          width: 155,
-          height: 155,
+          width: 125,
+          height: 125,
           fit: BoxFit.contain,
           errorBuilder: (_, _, _) => _buildEmoji(),
         ),
@@ -310,6 +324,104 @@ class _MoodBubble extends StatelessWidget {
         boxShadow: AppTheme.cardShadow,
       ),
       child: Text(mood, style: const TextStyle(fontSize: 20)),
+    );
+  }
+}
+
+// ── Pulsating glow ring ──────────────────────────────────────────────────────
+
+class _PulseGlow extends StatefulWidget {
+  final Color color;
+  const _PulseGlow({required this.color});
+
+  @override
+  State<_PulseGlow> createState() => _PulseGlowState();
+}
+
+class _PulseGlowState extends State<_PulseGlow>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 2500));
+    _scale = Tween<double>(begin: 0.88, end: 1.08)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _opacity = Tween<double>(begin: 0.35, end: 0.12)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _ctrl.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (_, _) => Transform.scale(
+        scale: _scale.value,
+        child: Container(
+          width: 180,
+          height: 180,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            gradient: RadialGradient(colors: [
+              widget.color.withValues(alpha: _opacity.value),
+              widget.color.withValues(alpha: 0.0),
+            ]),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Bouncing accessory ──────────────────────────────────────────────────────
+
+class _BounceAccessory extends StatefulWidget {
+  final String emoji;
+  const _BounceAccessory({required this.emoji});
+
+  @override
+  State<_BounceAccessory> createState() => _BounceAccessoryState();
+}
+
+class _BounceAccessoryState extends State<_BounceAccessory>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _y;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1400));
+    _y = Tween<double>(begin: 0, end: -4)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _ctrl.repeat(reverse: true);
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: _y,
+      builder: (_, child) =>
+          Transform.translate(offset: Offset(0, _y.value), child: child),
+      child: Text(widget.emoji, style: const TextStyle(fontSize: 30)),
     );
   }
 }

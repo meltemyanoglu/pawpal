@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
 import '../core/routes.dart';
@@ -8,6 +9,9 @@ import '../providers/pet_provider.dart';
 import '../widgets/stat_card.dart';
 import '../widgets/action_button.dart';
 import '../widgets/pet_display.dart';
+import '../widgets/floating_particles.dart';
+import '../widgets/confetti_overlay.dart';
+import '../widgets/event_popup.dart';
 
 class MainScreen extends ConsumerWidget {
   const MainScreen({super.key});
@@ -37,6 +41,84 @@ class _MainBodyState extends ConsumerState<_MainBody>
   final List<String> _particles = [];
   int _particleGen = 0;
   Timer? _particleClear;
+  StreamSubscription<PetEventData>? _eventSub;
+
+  // Event popup state
+  final List<_PopupData> _pendingPopups = [];
+  _PopupData? _currentPopup;
+  bool _showConfetti = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Listen to pet events (level-up, achievements, etc.)
+    _eventSub = ref.read(petProvider.notifier).events.listen(_onEvent);
+  }
+
+  void _onEvent(PetEventData event) {
+    _PopupData popup;
+    switch (event.type) {
+      case PetEvent.levelUp:
+        popup = _PopupData(
+          icon: '⭐',
+          title: 'Level Up!',
+          subtitle: 'You reached Level ${event.payload}!',
+          color: const Color(0xFFFFD93D),
+          showConfetti: true,
+        );
+      case PetEvent.achievementUnlocked:
+        final achievement = Achievement.all
+            .where((a) => a.id == event.payload)
+            .firstOrNull;
+        popup = _PopupData(
+          icon: achievement?.icon ?? '🏅',
+          title: 'Achievement Unlocked!',
+          subtitle: achievement?.title ?? 'New achievement!',
+          color: const Color(0xFFC3A8F5),
+          showConfetti: true,
+        );
+      case PetEvent.streakReward:
+        popup = _PopupData(
+          icon: '🔥',
+          title: '${event.payload}-Day Streak!',
+          subtitle: 'Bonus coins earned!',
+          color: const Color(0xFFFF6B9D),
+          showConfetti: false,
+        );
+      case PetEvent.missionComplete:
+        popup = _PopupData(
+          icon: '✅',
+          title: 'Mission Complete!',
+          subtitle: '+15 coins & +30 XP',
+          color: const Color(0xFF4CD97B),
+          showConfetti: false,
+        );
+    }
+
+    if (mounted) {
+      setState(() {
+        if (_currentPopup == null) {
+          _currentPopup = popup;
+          if (popup.showConfetti) _showConfetti = true;
+        } else {
+          _pendingPopups.add(popup);
+        }
+      });
+    }
+  }
+
+  void _dismissPopup() {
+    if (!mounted) return;
+    setState(() {
+      _showConfetti = false;
+      if (_pendingPopups.isNotEmpty) {
+        _currentPopup = _pendingPopups.removeAt(0);
+        if (_currentPopup!.showConfetti) _showConfetti = true;
+      } else {
+        _currentPopup = null;
+      }
+    });
+  }
 
   void _emit(String emoji) {
     setState(() {
@@ -52,11 +134,13 @@ class _MainBodyState extends ConsumerState<_MainBody>
   @override
   void dispose() {
     _particleClear?.cancel();
+    _eventSub?.cancel();
     super.dispose();
   }
 
   void _handleAction(String action) {
     final n = ref.read(petProvider.notifier);
+    HapticFeedback.lightImpact();
     switch (action) {
       case 'feed':
         n.feed();
@@ -92,32 +176,100 @@ class _MainBodyState extends ConsumerState<_MainBody>
       color: _moodBg(pet.mood),
       child: Scaffold(
         backgroundColor: Colors.transparent,
-        body: SafeArea(
-          child: Column(
-            children: [
-              _TopBar(pet: pet),
-              const SizedBox(height: 8),
-              _PetSection(
-                pet: pet,
-                particles: List.from(_particles),
-                particleGen: _particleGen,
+        body: Stack(
+          children: [
+            // Floating ambient particles
+            const Positioned.fill(child: FloatingParticles()),
+
+            // Main content
+            SafeArea(
+              child: Column(
+                children: [
+                  // ── Scrollable upper content ──
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Column(
+                        children: [
+                          _TopBar(pet: pet),
+                          const SizedBox(height: 4),
+                          _XPBar(pet: pet),
+                          const SizedBox(height: 4),
+                          _PetSection(
+                            pet: pet,
+                            particles: List.from(_particles),
+                            particleGen: _particleGen,
+                          ),
+                          const SizedBox(height: 4),
+                          _ThoughtBubble(pet: pet),
+                          const SizedBox(height: 8),
+                          _MissionsPreview(ref: ref),
+                          const SizedBox(height: 8),
+                          _StatsGrid(pet: pet),
+                          const SizedBox(height: 12),
+                        ],
+                      ),
+                    ),
+                  ),
+                  // ── Fixed bottom: actions + nav ──
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 4),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _ActionRow(pet: pet, onAction: _handleAction),
+                        const SizedBox(height: 8),
+                        _BottomNav(),
+                        const SizedBox(height: 8),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 10),
-              _ThoughtBubble(pet: pet),
-              const SizedBox(height: 14),
-              _StatsGrid(pet: pet),
-              const Spacer(),
-              _ActionRow(
-                pet: pet,
-                onAction: _handleAction,
+            ),
+
+            // Confetti overlay
+            if (_showConfetti)
+              Positioned.fill(
+                child: ConfettiOverlay(
+                  onComplete: () {
+                    if (mounted) setState(() => _showConfetti = false);
+                  },
+                ),
               ),
-              const SizedBox(height: 28),
-            ],
-          ),
+
+            // Event popup
+            if (_currentPopup != null)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 10,
+                left: 0,
+                right: 0,
+                child: EventPopup(
+                  icon: _currentPopup!.icon,
+                  title: _currentPopup!.title,
+                  subtitle: _currentPopup!.subtitle,
+                  accentColor: _currentPopup!.color,
+                  onDismiss: _dismissPopup,
+                ),
+              ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _PopupData {
+  final String icon, title, subtitle;
+  final Color color;
+  final bool showConfetti;
+  _PopupData({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.color,
+    required this.showConfetti,
+  });
 }
 
 // ── Top bar ───────────────────────────────────────────────────────────────────
@@ -129,23 +281,82 @@ class _TopBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(22, 18, 22, 0),
+      padding: const EdgeInsets.fromLTRB(22, 14, 22, 0),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text('My pet 🐾',
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: AppTheme.textLight,
-                      fontSize: 13,
-                    )),
+            Row(
+              children: [
+                Text('My pet 🐾',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: AppTheme.textLight,
+                          fontSize: 12,
+                        )),
+                const SizedBox(width: 8),
+                // Streak badge
+                if (pet.streak > 0)
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6B9D), Color(0xFFFF8FAB)],
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🔥', style: TextStyle(fontSize: 10)),
+                        const SizedBox(width: 3),
+                        Text(
+                          '${pet.streak}',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                            fontFamily: 'Nunito',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
+            ),
             Text(pet.name,
                 style: Theme.of(context)
                     .textTheme
                     .headlineMedium
-                    ?.copyWith(fontSize: 28)),
+                    ?.copyWith(fontSize: 26)),
           ]),
-          _HealthBadge(health: pet.overallHealth),
+          Row(
+            children: [
+              // Coins
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(18),
+                  boxShadow: AppTheme.cardShadow,
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Text('💰', style: TextStyle(fontSize: 13)),
+                  const SizedBox(width: 5),
+                  Text('${pet.coins}',
+                      style: const TextStyle(
+                        color: Color(0xFFFFB800),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        fontFamily: 'Nunito',
+                      )),
+                ]),
+              ),
+              const SizedBox(width: 8),
+              _HealthBadge(health: pet.overallHealth),
+            ],
+          ),
         ],
       ),
     );
@@ -165,22 +376,115 @@ class _HealthBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: AppTheme.cardShadow,
       ),
       child: Row(mainAxisSize: MainAxisSize.min, children: [
-        const Text('❤️', style: TextStyle(fontSize: 15)),
-        const SizedBox(width: 6),
+        const Text('❤️', style: TextStyle(fontSize: 13)),
+        const SizedBox(width: 5),
         Text('${health.toInt()}%',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   color: _color,
                   fontWeight: FontWeight.w800,
-                  fontSize: 15,
+                  fontSize: 14,
                 )),
       ]),
+    );
+  }
+}
+
+// ── XP Bar ───────────────────────────────────────────────────────────────────
+
+class _XPBar extends StatelessWidget {
+  final Pet pet;
+  const _XPBar({required this.pet});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          children: [
+            // Level badge
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFFC3A8F5), Color(0xFF9B7FE8)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Text(
+                'Lv.${pet.level}',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                  fontFamily: 'Nunito',
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            // XP progress
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        pet.levelTitle,
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: AppTheme.textMid,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                      Text(
+                        '${pet.xp}/${pet.xpForNextLevel} XP',
+                        style: const TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w600,
+                          color: AppTheme.textLight,
+                          fontFamily: 'Nunito',
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: TweenAnimationBuilder<double>(
+                      tween: Tween<double>(begin: 0, end: pet.xpProgress),
+                      duration: const Duration(milliseconds: 600),
+                      curve: Curves.easeOut,
+                      builder: (_, v, _) => LinearProgressIndicator(
+                        value: v,
+                        minHeight: 5,
+                        backgroundColor:
+                            const Color(0xFFC3A8F5).withValues(alpha: 0.2),
+                        valueColor: const AlwaysStoppedAnimation<Color>(
+                            Color(0xFF9B7FE8)),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -260,7 +564,7 @@ class _ThoughtBubbleState extends State<_ThoughtBubble> {
       ),
       child: Container(
         key: ValueKey('$_index${widget.pet.mood}'),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(22),
@@ -269,14 +573,14 @@ class _ThoughtBubbleState extends State<_ThoughtBubble> {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('💭', style: TextStyle(fontSize: 15)),
+            const Text('💭', style: TextStyle(fontSize: 14)),
             const SizedBox(width: 8),
             Text(
               '"$msg"',
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: AppTheme.textMid,
                     fontStyle: FontStyle.italic,
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
             ),
@@ -287,7 +591,115 @@ class _ThoughtBubbleState extends State<_ThoughtBubble> {
   }
 }
 
-// ── 2×2 Stats grid ────────────────────────────────────────────────────────────
+// ── Daily Missions Preview ──────────────────────────────────────────────────
+
+class _MissionsPreview extends StatelessWidget {
+  final WidgetRef ref;
+  const _MissionsPreview({required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final notifier = ref.read(petProvider.notifier);
+    final missions = notifier.getDailyMissions();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 22),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.7),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Row(
+              children: [
+                Text('📋', style: TextStyle(fontSize: 13)),
+                SizedBox(width: 6),
+                Text(
+                  'Daily Missions',
+                  style: TextStyle(
+                    fontFamily: 'Nunito',
+                    fontWeight: FontWeight.w800,
+                    fontSize: 12,
+                    color: AppTheme.textDark,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: missions.map((m) {
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: _MiniMission(mission: m),
+                  ),
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MiniMission extends StatelessWidget {
+  final DailyMission mission;
+  const _MiniMission({required this.mission});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: mission.isComplete
+            ? const Color(0xFF4CD97B).withValues(alpha: 0.15)
+            : Colors.white.withValues(alpha: 0.8),
+        borderRadius: BorderRadius.circular(10),
+        border: mission.isComplete
+            ? Border.all(
+                color: const Color(0xFF4CD97B).withValues(alpha: 0.4))
+            : null,
+      ),
+      child: Column(
+        children: [
+          Text(mission.icon, style: const TextStyle(fontSize: 16)),
+          const SizedBox(height: 2),
+          Text(
+            '${mission.current}/${mission.target}',
+            style: TextStyle(
+              fontFamily: 'Nunito',
+              fontWeight: FontWeight.w800,
+              fontSize: 10,
+              color: mission.isComplete
+                  ? const Color(0xFF4CD97B)
+                  : AppTheme.textMid,
+            ),
+          ),
+          const SizedBox(height: 3),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(3),
+            child: LinearProgressIndicator(
+              value: mission.progress,
+              minHeight: 3,
+              backgroundColor: Colors.grey.withValues(alpha: 0.15),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                mission.isComplete
+                    ? const Color(0xFF4CD97B)
+                    : AppTheme.primary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── 2x2 Stats grid ────────────────────────────────────────────────────────────
 
 class _StatsGrid extends StatelessWidget {
   final Pet pet;
@@ -317,7 +729,7 @@ class _StatsGrid extends StatelessWidget {
             gradient: const [Color(0xFFFFF4C2), Color(0xFFFFFBE6)],
           )),
         ]),
-        const SizedBox(height: 12),
+        const SizedBox(height: 8),
         Row(children: [
           Expanded(
               child: StatCard(
@@ -391,6 +803,106 @@ class _ActionRow extends StatelessWidget {
           onTap: () => onAction('sleep'),
         )),
       ]),
+    );
+  }
+}
+
+// ── Bottom Nav ────────────────────────────────────────────────────────────────
+
+class _BottomNav extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _NavIcon(
+            icon: '🏆',
+            label: 'Badges',
+            onTap: () => Navigator.pushNamed(context, Routes.achievements),
+          ),
+          _NavIcon(
+            icon: '🛍️',
+            label: 'Shop',
+            onTap: () => Navigator.pushNamed(context, Routes.shop),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _NavIcon extends StatefulWidget {
+  final String icon;
+  final String label;
+  final VoidCallback onTap;
+  const _NavIcon(
+      {required this.icon, required this.label, required this.onTap});
+
+  @override
+  State<_NavIcon> createState() => _NavIconState();
+}
+
+class _NavIconState extends State<_NavIcon>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 100));
+    _scale = Tween<double>(begin: 1.0, end: 0.88)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTapDown: (_) => _ctrl.forward(),
+      onTapUp: (_) {
+        _ctrl.reverse();
+        HapticFeedback.lightImpact();
+        widget.onTap();
+      },
+      onTapCancel: () => _ctrl.reverse(),
+      child: AnimatedBuilder(
+        animation: _scale,
+        builder: (_, child) =>
+            Transform.scale(scale: _scale.value, child: child),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: AppTheme.cardShadow,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(widget.icon, style: const TextStyle(fontSize: 18)),
+              const SizedBox(width: 6),
+              Text(
+                widget.label,
+                style: const TextStyle(
+                  fontFamily: 'Nunito',
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12,
+                  color: AppTheme.textDark,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

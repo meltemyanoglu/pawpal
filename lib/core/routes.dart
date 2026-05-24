@@ -4,6 +4,9 @@ import '../screens/pet_selection_screen.dart';
 import '../screens/main_screen.dart';
 import '../screens/mini_game_screen.dart';
 import '../screens/game_result_screen.dart';
+import '../screens/achievements_screen.dart';
+import '../screens/accessory_shop_screen.dart';
+import 'page_transitions.dart';
 
 class Routes {
   static const String onboarding = '/';
@@ -11,14 +14,28 @@ class Routes {
   static const String main = '/main';
   static const String miniGame = '/mini-game';
   static const String gameResult = '/game-result';
+  static const String achievements = '/achievements';
+  static const String shop = '/shop';
 
-  static Map<String, WidgetBuilder> get all => {
-        onboarding: (_) => const OnboardingScreen(),
-        petSelection: (_) => const PetSelectionScreen(),
-        main: (_) => const MainScreen(),
-        miniGame: (_) => const MiniGameScreen(),
-        gameResult: (ctx) => GameResultScreen(
-              score: (ModalRoute.of(ctx)!.settings.arguments as int?) ?? 0,
-            ),
-      };
+  static Route<dynamic> generateRoute(RouteSettings settings) {
+    switch (settings.name) {
+      case onboarding:
+        return PawPalPageRoute(page: const OnboardingScreen());
+      case petSelection:
+        return PawPalPageRoute(page: const PetSelectionScreen());
+      case main:
+        return PawPalPageRoute(page: const MainScreen());
+      case miniGame:
+        return GamePageRoute(page: const MiniGameScreen());
+      case gameResult:
+        final score = (settings.arguments as int?) ?? 0;
+        return PawPalPageRoute(page: GameResultScreen(score: score));
+      case achievements:
+        return PawPalPageRoute(page: const AchievementsScreen());
+      case shop:
+        return PawPalPageRoute(page: const AccessoryShopScreen());
+      default:
+        return PawPalPageRoute(page: const OnboardingScreen());
+    }
+  }
 }
