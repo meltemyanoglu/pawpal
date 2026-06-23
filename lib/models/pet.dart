@@ -1,4 +1,4 @@
-enum PetType { cat, dog, rabbit }
+enum PetType { cat, dog, bird, hamster, iguana }
 
 enum PetMood { ecstatic, happy, neutral, sad, exhausted, sleeping }
 
@@ -257,26 +257,34 @@ class Pet {
 
   static const _names = {
     PetType.cat: 'Mochi',
-    PetType.dog: 'Boba',
-    PetType.rabbit: 'Lumi',
+    PetType.dog: 'Barkley',
+    PetType.bird: 'Pip',
+    PetType.hamster: 'Boba',
+    PetType.iguana: 'Ziggy',
   };
 
   static const _emojis = {
     PetType.cat: '🐱',
     PetType.dog: '🐶',
-    PetType.rabbit: '🐰',
+    PetType.bird: '🐦',
+    PetType.hamster: '🐹',
+    PetType.iguana: '🦎',
   };
 
   static const _personalities = {
     PetType.cat: 'Mysterious & Elegant',
     PetType.dog: 'Energetic & Loyal',
-    PetType.rabbit: 'Shy & Curious',
+    PetType.bird: 'Curious & Clever',
+    PetType.hamster: 'Shy & Cuddly',
+    PetType.iguana: 'Chill & Adventurous',
   };
 
   static const _descriptions = {
     PetType.cat: 'Loves peaceful naps\nand knocking things off shelves.',
     PetType.dog: 'Always ready to play!\nYour most loyal companion.',
-    PetType.rabbit: 'Hops into adventure\nwith wide, curious eyes.',
+    PetType.bird: 'Sings at dawn and\nwatches everything closely.',
+    PetType.hamster: 'Stuffs cheeks with snacks\nand naps in cozy corners.',
+    PetType.iguana: 'Basks in the sun and\nexplores every hiding spot.',
   };
 
   static const _thoughts = {

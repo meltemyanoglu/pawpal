@@ -148,9 +148,9 @@ class _MainBodyState extends ConsumerState<_MainBody>
       case 'wash':
         n.wash();
         _emit('💧');
-      case 'play':
-        Navigator.pushNamed(context, Routes.miniGame);
-        return;
+      case 'cuddle':
+        n.play();
+        _emit('💕');
       case 'sleep':
         n.toggleSleep();
         _emit('💤');
@@ -202,11 +202,9 @@ class _MainBodyState extends ConsumerState<_MainBody>
                           ),
                           const SizedBox(height: 4),
                           _ThoughtBubble(pet: pet),
-                          const SizedBox(height: 8),
-                          _MissionsPreview(ref: ref),
-                          const SizedBox(height: 8),
+                          const SizedBox(height: 16),
                           _StatsGrid(pet: pet),
-                          const SizedBox(height: 12),
+                          const SizedBox(height: 16),
                         ],
                       ),
                     ),
@@ -564,136 +562,36 @@ class _ThoughtBubbleState extends State<_ThoughtBubble> {
       ),
       child: Container(
         key: ValueKey('$_index${widget.pet.mood}'),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 12),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(22),
-          boxShadow: AppTheme.cardShadow,
+          borderRadius: BorderRadius.circular(28),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primary.withValues(alpha: 0.10),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('💭', style: TextStyle(fontSize: 14)),
-            const SizedBox(width: 8),
-            Text(
-              '"$msg"',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: AppTheme.textMid,
-                    fontStyle: FontStyle.italic,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                  ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Daily Missions Preview ──────────────────────────────────────────────────
-
-class _MissionsPreview extends StatelessWidget {
-  final WidgetRef ref;
-  const _MissionsPreview({required this.ref});
-
-  @override
-  Widget build(BuildContext context) {
-    final notifier = ref.read(petProvider.notifier);
-    final missions = notifier.getDailyMissions();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 22),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.7),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Row(
-              children: [
-                Text('📋', style: TextStyle(fontSize: 13)),
-                SizedBox(width: 6),
-                Text(
-                  'Daily Missions',
-                  style: TextStyle(
-                    fontFamily: 'Nunito',
-                    fontWeight: FontWeight.w800,
-                    fontSize: 12,
-                    color: AppTheme.textDark,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 6),
-            Row(
-              children: missions.map((m) {
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: _MiniMission(mission: m),
-                  ),
-                );
-              }).toList(),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _MiniMission extends StatelessWidget {
-  final DailyMission mission;
-  const _MiniMission({required this.mission});
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-      decoration: BoxDecoration(
-        color: mission.isComplete
-            ? const Color(0xFF4CD97B).withValues(alpha: 0.15)
-            : Colors.white.withValues(alpha: 0.8),
-        borderRadius: BorderRadius.circular(10),
-        border: mission.isComplete
-            ? Border.all(
-                color: const Color(0xFF4CD97B).withValues(alpha: 0.4))
-            : null,
-      ),
-      child: Column(
-        children: [
-          Text(mission.icon, style: const TextStyle(fontSize: 16)),
-          const SizedBox(height: 2),
-          Text(
-            '${mission.current}/${mission.target}',
-            style: TextStyle(
-              fontFamily: 'Nunito',
-              fontWeight: FontWeight.w800,
-              fontSize: 10,
-              color: mission.isComplete
-                  ? const Color(0xFF4CD97B)
-                  : AppTheme.textMid,
-            ),
-          ),
-          const SizedBox(height: 3),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(3),
-            child: LinearProgressIndicator(
-              value: mission.progress,
-              minHeight: 3,
-              backgroundColor: Colors.grey.withValues(alpha: 0.15),
-              valueColor: AlwaysStoppedAnimation<Color>(
-                mission.isComplete
-                    ? const Color(0xFF4CD97B)
-                    : AppTheme.primary,
+            const Text('💭', style: TextStyle(fontSize: 18)),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                '"$msg"',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppTheme.textMid,
+                      fontStyle: FontStyle.italic,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                    ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -719,7 +617,7 @@ class _StatsGrid extends StatelessWidget {
             color: AppTheme.hungerColor,
             gradient: const [Color(0xFFFFD6E7), Color(0xFFFFF0F5)],
           )),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
               child: StatCard(
             icon: '😊',
@@ -729,7 +627,7 @@ class _StatsGrid extends StatelessWidget {
             gradient: const [Color(0xFFFFF4C2), Color(0xFFFFFBE6)],
           )),
         ]),
-        const SizedBox(height: 8),
+        const SizedBox(height: 14),
         Row(children: [
           Expanded(
               child: StatCard(
@@ -739,7 +637,7 @@ class _StatsGrid extends StatelessWidget {
             color: AppTheme.cleanlinessColor,
             gradient: const [Color(0xFFD6EEFF), Color(0xFFEEF6FF)],
           )),
-          const SizedBox(width: 12),
+          const SizedBox(width: 14),
           Expanded(
               child: StatCard(
             icon: '⚡',
@@ -787,11 +685,11 @@ class _ActionRow extends StatelessWidget {
         const SizedBox(width: 10),
         Expanded(
             child: ActionButton(
-          icon: '🎮',
-          label: 'Play',
+          icon: '💕',
+          label: 'Cuddle',
           gradient: const [Color(0xFFFFD93D), Color(0xFFFFB800)],
-          enabled: !sleeping && pet.energy >= 15,
-          onTap: () => onAction('play'),
+          enabled: !sleeping && pet.energy >= 10,
+          onTap: () => onAction('cuddle'),
         )),
         const SizedBox(width: 10),
         Expanded(

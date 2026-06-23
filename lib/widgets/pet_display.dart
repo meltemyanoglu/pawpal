@@ -7,13 +7,17 @@ import '../models/pet.dart';
 const _lottieReady = {
   PetType.cat: true,
   PetType.dog: false,
-  PetType.rabbit: false,
 };
 
 const _lottiePaths = {
   PetType.cat: 'assets/animations/cat.json',
-  PetType.dog: 'assets/animations/dog.json',
-  PetType.rabbit: 'assets/animations/rabbit.json',
+};
+
+const _gifPaths = {
+  PetType.dog: 'assets/animations/dog.gif',
+  PetType.bird: 'assets/animations/bird.gif',
+  PetType.hamster: 'assets/animations/hamster.gif',
+  PetType.iguana: 'assets/animations/bukale.gif',
 };
 
 class PetDisplay extends StatefulWidget {
@@ -45,7 +49,9 @@ class _PetDisplayState extends State<PetDisplay> with TickerProviderStateMixin {
   static const _bgGradients = {
     PetType.cat: [Color(0xFFFFD6E7), Color(0xFFFFF0F5)],
     PetType.dog: [Color(0xFFD6EEFF), Color(0xFFF0F8FF)],
-    PetType.rabbit: [Color(0xFFD6FFE8), Color(0xFFF0FFF4)],
+    PetType.bird: [Color(0xFFD6FFD6), Color(0xFFF0FFF0)],
+    PetType.hamster: [Color(0xFFFFEDD6), Color(0xFFFFF8F0)],
+    PetType.iguana: [Color(0xFFFFD6D6), Color(0xFFFFF0F0)],
   };
 
   @override
@@ -109,8 +115,9 @@ class _PetDisplayState extends State<PetDisplay> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _bgGradients[widget.pet.type]!;
+    final colors = _bgGradients[widget.pet.type] ?? [const Color(0xFFFFD6E7), const Color(0xFFFFF0F5)];
     final hasLottie = _lottieReady[widget.pet.type] ?? false;
+    final hasGif = _gifPaths.containsKey(widget.pet.type);
     final accessory = widget.pet.equippedAccessory;
     final hasAccessory = accessory != null && accessory.isNotEmpty;
 
@@ -153,7 +160,7 @@ class _PetDisplayState extends State<PetDisplay> with TickerProviderStateMixin {
             ),
             child: ClipOval(
               child: Center(
-                child: hasLottie ? _buildLottie() : _buildEmoji(),
+                child: hasLottie ? _buildLottie() : hasGif ? _buildGif() : _buildEmoji(),
               ),
             ),
           ),
@@ -194,6 +201,29 @@ class _PetDisplayState extends State<PetDisplay> with TickerProviderStateMixin {
           height: 125,
           fit: BoxFit.contain,
           errorBuilder: (_, _, _) => _buildEmoji(),
+        ),
+        if (widget.pet.isSleeping) const _SleepingZzz(),
+      ],
+    );
+  }
+
+  Widget _buildGif() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        AnimatedBuilder(
+          animation: _bounceY,
+          builder: (_, child) => Transform.translate(
+            offset: Offset(0, _bounceY.value),
+            child: child,
+          ),
+          child: Image.asset(
+            _gifPaths[widget.pet.type]!,
+            width: 110,
+            height: 110,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => _buildEmoji(),
+          ),
         ),
         if (widget.pet.isSleeping) const _SleepingZzz(),
       ],

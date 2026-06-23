@@ -6,7 +6,7 @@ class PawPalPageRoute<T> extends PageRouteBuilder<T> {
 
   PawPalPageRoute({required this.page})
       : super(
-          pageBuilder: (_, __, ___) => page,
+          pageBuilder: (_, _, _) => page,
           transitionDuration: const Duration(milliseconds: 400),
           reverseTransitionDuration: const Duration(milliseconds: 300),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
@@ -39,7 +39,7 @@ class GamePageRoute<T> extends PageRouteBuilder<T> {
 
   GamePageRoute({required this.page})
       : super(
-          pageBuilder: (_, __, ___) => page,
+          pageBuilder: (_, _, _) => page,
           transitionDuration: const Duration(milliseconds: 500),
           reverseTransitionDuration: const Duration(milliseconds: 350),
           transitionsBuilder: (context, animation, secondaryAnimation, child) {
