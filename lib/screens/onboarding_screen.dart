@@ -1,8 +1,17 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:lottie/lottie.dart';
-import '../core/theme.dart';
 import '../core/routes.dart';
 import '../services/storage_service.dart';
+
+// ── Renk paleti (köpek illüstrasyonlarından ilham) ───────────────────────────
+const _cream = Color(0xFFF5EFE0);
+const _coral = Color(0xFFE8634A);
+const _pink = Color(0xFFF2A7B8);
+const _green = Color(0xFF6B9E57);
+const _navy = Color(0xFF1A1A2E);
+const _gold = Color(0xFFF5C842);
+const _lilac = Color(0xFFB8A9D9);
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -13,30 +22,29 @@ class OnboardingScreen extends StatefulWidget {
 
 class _OnboardingScreenState extends State<OnboardingScreen>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _fadeCtrl;
+  late final AnimationController _ctrl;
   late final Animation<double> _fadeIn;
   late final Animation<Offset> _slideUp;
 
   @override
   void initState() {
     super.initState();
-    _fadeCtrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 900));
-    _fadeIn = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 800));
+    _fadeIn = CurvedAnimation(parent: _ctrl, curve: Curves.easeOut);
     _slideUp = Tween<Offset>(
-      begin: const Offset(0, 0.12),
+      begin: const Offset(0, 0.1),
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
 
-    // Kısa gecikme ile fade-in
-    Future.delayed(const Duration(milliseconds: 200), () {
-      if (mounted) _fadeCtrl.forward();
+    Future.delayed(const Duration(milliseconds: 150), () {
+      if (mounted) _ctrl.forward();
     });
   }
 
   @override
   void dispose() {
-    _fadeCtrl.dispose();
+    _ctrl.dispose();
     super.dispose();
   }
 
@@ -53,48 +61,11 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     final size = MediaQuery.of(context).size;
 
     return Scaffold(
+      backgroundColor: _cream,
       body: Stack(
         children: [
-          // ── Arka plan ──────────────────────────────────────────────────────
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFFFCEEF5),
-                  Color(0xFFFFF4F8),
-                  Color(0xFFF4EFFE),
-                ],
-              ),
-            ),
-          ),
-
-          // Köşe dekoratif daireler
-          Positioned(
-            top: -60,
-            right: -60,
-            child: Container(
-              width: 200,
-              height: 200,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppTheme.primary.withValues(alpha: 0.12),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: 80,
-            left: -50,
-            child: Container(
-              width: 160,
-              height: 160,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: const Color(0xFFB5EAD7).withValues(alpha: 0.25),
-              ),
-            ),
-          ),
+          // ── Groovy arka plan şekilleri ─────────────────────────────────────
+          const Positioned.fill(child: _GroovyBackground()),
 
           // ── İçerik ────────────────────────────────────────────────────────
           SafeArea(
@@ -104,61 +75,73 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                 position: _slideUp,
                 child: SizedBox(
                   height: size.height,
-                  child: Column(
-                    children: [
-                      const Spacer(flex: 2),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 36),
 
-                      // Üst badge
-                      _PillBadge(label: '🐾  Virtual Pet Game'),
+                        // ── Üst etiket ─────────────────────────────────────
+                        _GroovyChip(label: '🐾  Virtual Pet'),
 
-                      const SizedBox(height: 32),
+                        const SizedBox(height: 24),
 
-                      // Lottie kedi animasyonu
-                      _CatHero(),
-
-                      const SizedBox(height: 32),
-
-                      // Başlık
-                      Text(
-                        'PawPal',
-                        style: Theme.of(context)
-                            .textTheme
-                            .displayLarge
-                            ?.copyWith(fontSize: 52, letterSpacing: -2),
-                      ),
-                      const SizedBox(height: 10),
-
-                      // Açıklama
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 40),
-                        child: Text(
-                          'A tiny friend is waiting for you.\nFeed, play & keep them happy!',
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(fontSize: 16, height: 1.7),
+                        // ── Bold başlık ────────────────────────────────────
+                        const Text(
+                          'Welcome!',
+                          style: TextStyle(
+                            fontSize: 52,
+                            fontWeight: FontWeight.w900,
+                            color: _navy,
+                            fontFamily: 'Nunito',
+                            letterSpacing: -2,
+                            height: 1.0,
+                          ),
                         ),
-                      ),
+                        const SizedBox(height: 6),
+                        const Text(
+                          "Let's meet your\nnew best friend.",
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: _navy,
+                            fontFamily: 'Nunito',
+                            height: 1.3,
+                          ),
+                        ),
 
-                      const Spacer(flex: 3),
+                        const Spacer(),
 
-                      // Başlat butonu
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 28),
-                        child: _StartButton(onTap: _onStart),
-                      ),
+                        // ── Hero illüstrasyon ──────────────────────────────
+                        Center(child: _HeroIllustration()),
 
-                      const SizedBox(height: 16),
+                        const Spacer(),
 
-                      // Alt not
-                      Text(
-                        'Free · Ad-free · Adorable',
-                        style: Theme.of(context).textTheme.bodySmall,
-                      ),
+                        // ── Butonlar ───────────────────────────────────────
+                        _SolidButton(
+                          label: "Let's Go  →",
+                          color: _navy,
+                          textColor: _cream,
+                          onTap: _onStart,
+                        ),
+                        const SizedBox(height: 12),
 
-                      const SizedBox(height: 40),
-                    ],
+                        // Alt not
+                        Center(
+                          child: Text(
+                            'Free · Ad-free · Adorable ✨',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: _navy.withValues(alpha: 0.4),
+                              fontFamily: 'Nunito',
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -170,84 +153,179 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 }
 
-// ── Widgets ───────────────────────────────────────────────────────────────────
+// ── Groovy Arka Plan Şekilleri ────────────────────────────────────────────────
 
-class _PillBadge extends StatelessWidget {
-  final String label;
-  const _PillBadge({required this.label});
+class _GroovyBackground extends StatelessWidget {
+  const _GroovyBackground();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
-      decoration: BoxDecoration(
-        color: AppTheme.primary.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        label,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: AppTheme.primaryDark,
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
-            ),
-      ),
-    );
+    return CustomPaint(painter: _GroovyPainter());
   }
 }
 
-class _CatHero extends StatelessWidget {
+class _GroovyPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    // Sağ üst — scalloped flower (büyük)
+    _drawScallop(canvas, Offset(size.width + 10, -20), 90, _coral.withValues(alpha: 0.18), 10);
+
+    // Sol alt — 4-nokta yıldız
+    _draw4Star(canvas, Offset(-20, size.height * 0.72), 70, _pink.withValues(alpha: 0.25));
+
+    // Sağ orta — küçük scallop
+    _drawScallop(canvas, Offset(size.width * 0.88, size.height * 0.52), 44, _green.withValues(alpha: 0.20), 8);
+
+    // Sol üst — blob/wavy circle
+    _drawBlob(canvas, Offset(size.width * 0.08, size.height * 0.22), 36, _gold.withValues(alpha: 0.30));
+
+    // Sağ alt köşe — scallop
+    _drawScallop(canvas, Offset(size.width * 0.15, size.height * 0.91), 32, _lilac.withValues(alpha: 0.30), 7);
+
+    // Küçük 4-yıldız sağ üst iç
+    _draw4Star(canvas, Offset(size.width * 0.82, size.height * 0.14), 28, _coral.withValues(alpha: 0.22));
+
+    // Nokta/artı işaretleri
+    _drawPlus(canvas, Offset(size.width * 0.12, size.height * 0.42), 10, _green.withValues(alpha: 0.5));
+    _drawPlus(canvas, Offset(size.width * 0.78, size.height * 0.62), 8, _coral.withValues(alpha: 0.4));
+    _drawPlus(canvas, Offset(size.width * 0.55, size.height * 0.08), 7, _pink.withValues(alpha: 0.5));
+  }
+
+  void _drawScallop(Canvas canvas, Offset center, double size, Color color, int bumps) {
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final path = Path();
+    final r = size * 0.5;
+    final bumpR = r * 0.18;
+
+    for (int i = 0; i < bumps; i++) {
+      final angle = (2 * pi * i / bumps) - pi / 2;
+      final nextAngle = (2 * pi * (i + 1) / bumps) - pi / 2;
+      if (i == 0) {
+        path.moveTo(center.dx + r * cos(angle), center.dy + r * sin(angle));
+      }
+      path.arcToPoint(
+        Offset(center.dx + r * cos(nextAngle), center.dy + r * sin(nextAngle)),
+        radius: Radius.circular(bumpR * 1.1),
+        clockwise: false,
+      );
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _draw4Star(Canvas canvas, Offset center, double size, Color color) {
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final path = Path();
+    final r = size * 0.5;
+    final innerR = r * 0.35;
+
+    for (int i = 0; i < 4; i++) {
+      final outerAngle = (pi * 2 * i / 4) - pi / 4;
+      final innerAngle1 = outerAngle + pi / 8;
+      final innerAngle2 = outerAngle - pi / 8;
+
+      final outerPt = Offset(center.dx + r * cos(outerAngle), center.dy + r * sin(outerAngle));
+      final inner1 = Offset(center.dx + innerR * cos(innerAngle1), center.dy + innerR * sin(innerAngle1));
+      final inner2 = Offset(center.dx + innerR * cos(innerAngle2), center.dy + innerR * sin(innerAngle2));
+
+      if (i == 0) path.moveTo(inner2.dx, inner2.dy);
+      path.quadraticBezierTo(outerPt.dx, outerPt.dy, inner1.dx, inner1.dy);
+
+      final nextInnerAngle = (pi * 2 * (i + 1) / 4) - pi / 4 - pi / 8;
+      final nextInner = Offset(
+        center.dx + innerR * cos(nextInnerAngle),
+        center.dy + innerR * sin(nextInnerAngle),
+      );
+      path.lineTo(nextInner.dx, nextInner.dy);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawBlob(Canvas canvas, Offset center, double size, Color color) {
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final r = size * 0.5;
+    final path = Path()
+      ..addOval(Rect.fromCenter(center: center, width: r * 1.6, height: r * 2.0));
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawPlus(Canvas canvas, Offset center, double size, Color color) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = size * 0.22
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(
+      Offset(center.dx - size, center.dy),
+      Offset(center.dx + size, center.dy),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(center.dx, center.dy - size),
+      Offset(center.dx, center.dy + size),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+// ── Hero İllüstrasyon ─────────────────────────────────────────────────────────
+
+class _HeroIllustration extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 220,
-      height: 220,
+      width: 260,
+      height: 260,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          // Glow dairesi
+          // Büyük renkli scallop shape (arka plan)
+          CustomPaint(
+            size: const Size(240, 240),
+            painter: _ScallopShapePainter(color: _coral.withValues(alpha: 0.13), bumps: 12),
+          ),
+          // Orta daire
           Container(
-            width: 220,
-            height: 220,
+            width: 190,
+            height: 190,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: RadialGradient(
-                colors: [
-                  AppTheme.primary.withValues(alpha: 0.18),
-                  AppTheme.primary.withValues(alpha: 0.0),
-                ],
-              ),
+              color: _pink.withValues(alpha: 0.18),
             ),
           ),
-          // İç daire
-          Container(
-            width: 176,
-            height: 176,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFFFFD6E7), Color(0xFFFFF0F5)],
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.primary.withValues(alpha: 0.3),
-                  blurRadius: 32,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-          ),
-          // Animasyon
+          // Lottie animasyonu
           ClipOval(
-            child: Lottie.asset(
-              'assets/animations/cat.json',
-              width: 160,
-              height: 160,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) =>
-                  const Text('🐱', style: TextStyle(fontSize: 90)),
+            child: SizedBox(
+              width: 170,
+              height: 170,
+              child: Lottie.asset(
+                'assets/animations/cat.json',
+                fit: BoxFit.cover,
+                errorBuilder: (_, _, _) => const Center(
+                  child: Text('🐱', style: TextStyle(fontSize: 100)),
+                ),
+              ),
+            ),
+          ),
+          // Sağ üst mini dekorasyon
+          Positioned(
+            top: 12,
+            right: 16,
+            child: CustomPaint(
+              size: const Size(40, 40),
+              painter: _StarPainter(color: _gold),
+            ),
+          ),
+          // Sol alt mini dekorasyon
+          Positioned(
+            bottom: 18,
+            left: 20,
+            child: CustomPaint(
+              size: const Size(30, 30),
+              painter: _StarPainter(color: _green.withValues(alpha: 0.7)),
             ),
           ),
         ],
@@ -256,15 +334,128 @@ class _CatHero extends StatelessWidget {
   }
 }
 
-class _StartButton extends StatefulWidget {
-  final VoidCallback onTap;
-  const _StartButton({required this.onTap});
+// ── Scallop Shape Painter (hero arka planı için) ───────────────────────────────
+
+class _ScallopShapePainter extends CustomPainter {
+  final Color color;
+  final int bumps;
+  const _ScallopShapePainter({required this.color, required this.bumps});
 
   @override
-  State<_StartButton> createState() => _StartButtonState();
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final center = Offset(size.width / 2, size.height / 2);
+    final r = size.width * 0.44;
+    final bumpR = r * 0.12;
+    final path = Path();
+
+    for (int i = 0; i < bumps; i++) {
+      final angle = (2 * pi * i / bumps) - pi / 2;
+      final nextAngle = (2 * pi * (i + 1) / bumps) - pi / 2;
+      if (i == 0) {
+        path.moveTo(center.dx + r * cos(angle), center.dy + r * sin(angle));
+      }
+      path.arcToPoint(
+        Offset(center.dx + r * cos(nextAngle), center.dy + r * sin(nextAngle)),
+        radius: Radius.circular(bumpR),
+        clockwise: false,
+      );
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
 }
 
-class _StartButtonState extends State<_StartButton>
+// ── 4-Nokta Yıldız Painter ─────────────────────────────────────────────────────
+
+class _StarPainter extends CustomPainter {
+  final Color color;
+  const _StarPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final center = Offset(size.width / 2, size.height / 2);
+    final r = size.width * 0.5;
+    final inner = r * 0.35;
+    final path = Path();
+
+    for (int i = 0; i < 4; i++) {
+      final outerA = (pi * 2 * i / 4) - pi / 4;
+      final inner1A = outerA + pi / 8;
+      final inner2A = outerA - pi / 8;
+
+      final outerPt = Offset(center.dx + r * cos(outerA), center.dy + r * sin(outerA));
+      final in1 = Offset(center.dx + inner * cos(inner1A), center.dy + inner * sin(inner1A));
+      final in2 = Offset(center.dx + inner * cos(inner2A), center.dy + inner * sin(inner2A));
+
+      if (i == 0) path.moveTo(in2.dx, in2.dy);
+      path.quadraticBezierTo(outerPt.dx, outerPt.dy, in1.dx, in1.dy);
+
+      final nextIn2A = (pi * 2 * (i + 1) / 4) - pi / 4 - pi / 8;
+      path.lineTo(
+        center.dx + inner * cos(nextIn2A),
+        center.dy + inner * sin(nextIn2A),
+      );
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter old) => false;
+}
+
+// ── Groovy Chip ───────────────────────────────────────────────────────────────
+
+class _GroovyChip extends StatelessWidget {
+  final String label;
+  const _GroovyChip({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: _navy.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: _navy.withValues(alpha: 0.12), width: 1.5),
+      ),
+      child: Text(
+        label,
+        style: const TextStyle(
+          fontSize: 13,
+          fontWeight: FontWeight.w700,
+          color: _navy,
+          fontFamily: 'Nunito',
+        ),
+      ),
+    );
+  }
+}
+
+// ── Solid Button ──────────────────────────────────────────────────────────────
+
+class _SolidButton extends StatefulWidget {
+  final String label;
+  final Color color;
+  final Color textColor;
+  final VoidCallback onTap;
+  const _SolidButton({
+    required this.label,
+    required this.color,
+    required this.textColor,
+    required this.onTap,
+  });
+
+  @override
+  State<_SolidButton> createState() => _SolidButtonState();
+}
+
+class _SolidButtonState extends State<_SolidButton>
     with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scale;
@@ -273,8 +464,8 @@ class _StartButtonState extends State<_StartButton>
   void initState() {
     super.initState();
     _ctrl = AnimationController(
-        vsync: this, duration: const Duration(milliseconds: 110));
-    _scale = Tween<double>(begin: 1.0, end: 0.94)
+        vsync: this, duration: const Duration(milliseconds: 100));
+    _scale = Tween<double>(begin: 1.0, end: 0.96)
         .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeOut));
   }
 
@@ -298,32 +489,21 @@ class _StartButtonState extends State<_StartButton>
         builder: (_, child) => Transform.scale(scale: _scale.value, child: child),
         child: Container(
           width: double.infinity,
-          height: 60,
+          height: 58,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [AppTheme.primary, AppTheme.primaryDark],
-            ),
-            borderRadius: BorderRadius.circular(30),
-            boxShadow: AppTheme.glowShadow(AppTheme.primary),
+            color: widget.color,
+            borderRadius: BorderRadius.circular(16),
           ),
           child: Center(
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  "Let's Go",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: Colors.white,
-                        fontSize: 18,
-                      ),
-                ),
-                const SizedBox(width: 8),
-                const Text('→',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold)),
-              ],
+            child: Text(
+              widget.label,
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w800,
+                color: widget.textColor,
+                fontFamily: 'Nunito',
+                letterSpacing: 0.3,
+              ),
             ),
           ),
         ),
